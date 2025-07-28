@@ -28,6 +28,27 @@ int main()
 				window->close();
 		}
 
+		sf::Vector2f RequestedPlayerMovement(0.0f, 0.0f);
+		//gather player input
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W))
+		{
+			RequestedPlayerMovement += sf::Vector2f(0.0f, -1.5f);
+		}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A))
+		{
+			RequestedPlayerMovement += sf::Vector2f(-1.5f, 0.0f);
+		}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S))
+		{
+			RequestedPlayerMovement += sf::Vector2f(0.0f, 1.5f);
+		}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D))
+		{
+			RequestedPlayerMovement += sf::Vector2f(1.5f, 0.0f);
+		}
+
+		balloon.move(RequestedPlayerMovement);
+
 		window->clear();
 		window->draw(balloon);
 		window->display();
