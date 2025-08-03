@@ -4,7 +4,7 @@
 
 
 
-void Begin(const sf::RenderWindow* window) {
+void Begin(const sf::Window* window) {
 	
 }
 

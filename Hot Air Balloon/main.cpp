@@ -3,25 +3,30 @@
 #include "Game.h"
 #include "Resources.h"
 #include "Camera.h"
+#include "TiledRender.h"
+#include "BirdPoints.h"
 
-Camera camera(1080);
+Camera camera(10000);
 
 int main()
 {
 
 	sf::Clock frameClock;
+	
 
 	sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode({ 1900, 1800 }), "Hot Air Balloon :3");
 
-	//sf::Texture balloonTexture;
+	sf::Vector2f centerTile = { 0, 0 };
+	sf::Vector2f scale = { 10, 10 };
+	sf::CircleShape circle;
 
-	//if (!balloonTexture.loadFromFile("resources/textures/Balloon.png"))
-	//{
-	//	std::cout << "Could not load file resources/textures/Balloon.png" << std::endl;
-	//	return -1;
-	//}
+	TiledRender tiledRenderer;
 
-	//sets up loading images, you dont need to retype above for every image 
+	circle.setFillColor(sf::Color::Blue);
+	circle.setRadius(10);
+	circle.setScale(scale);
+
+	//sets up loading images, you dont need to retype above for every image
 	for (const auto& file : std::filesystem::directory_iterator("./resources/textures"))
 	{
 		if (file.is_regular_file() && (file.path().extension() == ".png")) {
@@ -30,16 +35,12 @@ int main()
 		}
 	}
 
-	//sf::Texture::setRepeated;
-
-	//sf::Texture backgroundTexture;
-	//if (!backgroundTexture.loadFromFile("resources/textures/TiledClouds.png"))
+	//if (!balloonTexture.loadFromFile("resources/textures/Balloon.png"))
 	//{
-	//	std::cout << "Could not load file resources/textures/TiledClouds.png" << std::endl;
+	//	std::cout << "Could not load file resources/textures/Balloon.png" << std::endl;
 	//	return -1;
-	//}
+	//} 
 
-	//backgroundTexture.setRepeated(true);
 	sf::Sprite background(Resources::textures["TiledClouds.png"]);
 	background.setOrigin({ 150, 150 });
 	background.setPosition({ 0, 0 });
@@ -68,6 +69,11 @@ int main()
 			if (event->is<sf::Event::Closed>())
 				window->close();
 		}
+
+		// make vector of point birds
+		std::vector<BirdPoints*> pointBirds;
+		BirdPoints* pointBird = new BirdPoints(Resources::textures["bird.png"], { 100, 100 }, scale, 1);
+		pointBirds.push_back(pointBird);
 
 		float playerSpeed = 1000;
 
@@ -112,9 +118,28 @@ int main()
 			camera.position.y += velocity.y;
 		}
 
+		//set window and camera view
 		window->clear();
 		window->setView(camera.GetView(window->getSize()));
-		window->draw(background);
+		//window->draw(background);
+
+		//render background
+		tiledRenderer.updateCenterTile(window, centerTile, camera, Resources::textures["TiledClouds.png"].getSize().x, scale.x);
+		tiledRenderer.render(window, Resources::textures["TiledClouds.png"],
+			Resources::textures["TiledClouds.png"].getSize().x, scale, centerTile);
+		circle.setPosition(centerTile);
+		//window->draw(circle);
+
+		//Render all point birds
+		for (BirdPoints* bp : pointBirds)
+		{
+			bp->render(window);
+		}
+
+		//collision thing
+		//.getGlobal position and .findIntersection (takes a rect)
+
+		//render player
 		window->draw(balloon);
 		window->display();
 
