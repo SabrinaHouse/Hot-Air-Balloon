@@ -6,18 +6,63 @@
 #include "TiledRender.h"
 #include "BirdPoints.h"
 
-Camera camera(10000);
+std::vector<BirdPoints*> pointBirds;
+sf::Vector2f scale = { 10, 10 };
+
+Camera camera(2000);
+struct gameData {
+	int totalPoints = 0;
+	int availablePointBirds = 0;
+};
+
+
+
+//you need to make an object of the struct to access the data within
+gameData data;
+
+void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
+	if (clock.getElapsedTime().asSeconds() > 1 && data.availablePointBirds < 10 ) {
+		sf::Vector2f pos;
+		pos.x = player.getPosition().x + (std::rand() % 2000 - 1000);
+		pos.y = player.getPosition().y + (std::rand() % 2000 - 1000);
+		int pointValue = rand() % 6 + 1;
+		BirdPoints* pointBird;
+		switch (pointValue) {
+		case 2:
+
+		case 4:
+
+		case 1:
+			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1);
+			break;
+		case 6:
+
+		case 3:
+			pointBird = new BirdPoints(Resources::textures["blueBird.png"], pos, scale, 3);
+			break;
+		case 5:
+			pointBird = new BirdPoints(Resources::textures["yellowBird.png"], pos, scale, 5);
+			break;
+		default:
+			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1);
+		};
+		//BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], pos, scale, rand() % 4 + 1);
+		data.availablePointBirds++;
+		pointBirds.push_back(pointBird);
+		clock.restart();
+	}
+}
 
 int main()
 {
 
 	sf::Clock frameClock;
-	
+	sf::Clock pointClock;
 
 	sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode({ 1900, 1800 }), "Hot Air Balloon :3");
 
-	sf::Vector2f centerTile = { 0, 0 };
-	sf::Vector2f scale = { 10, 10 };
+	sf::Vector2f centerTile = { 100, 100 };
+	
 	sf::CircleShape circle;
 
 	TiledRender tiledRenderer;
@@ -26,6 +71,8 @@ int main()
 	circle.setRadius(10);
 	circle.setScale(scale);
 
+	// file.path().extension() == ".ttf")
+
 	//sets up loading images, you dont need to retype above for every image
 	for (const auto& file : std::filesystem::directory_iterator("./resources/textures"))
 	{
@@ -33,7 +80,13 @@ int main()
 			if (!Resources::textures[file.path().filename().string()].loadFromFile(file.path().string()))
 				std::abort();
 		}
+		else if (file.is_regular_file() && (file.path().extension() == ".ttf")) {
+			if (!Resources::fonts[file.path().filename().string()].openFromFile(file.path().string()))
+				std::abort();
+			}
 	}
+
+	
 
 	//if (!balloonTexture.loadFromFile("resources/textures/Balloon.png"))
 	//{
@@ -51,12 +104,22 @@ int main()
 	balloon.setPosition({ 0, 0 });
 	balloon.setScale({ 10, 10 });
 
+	//point bird vector
+
+	BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], { 100, 100 }, scale, 1);
+	pointBirds.push_back(pointBird);
+
+	float playerSpeed = 1000;
+
 
 	//balloon.setTextureRect(sf::IntRect({ 0,0 }, { 11 ,16 })); (You don't need this unless working from an image with multiple sprites
 
 	
 
 	camera.position = { 0, 0 };
+	sf::Text pointUI(Resources::fonts["StackedPixel.ttf"]);
+	pointUI.setScale({3, 3});
+	
 
 	while (window->isOpen())
 	{
@@ -64,18 +127,14 @@ int main()
 		float deltaTime = frameClock.getElapsedTime().asSeconds();
 		frameClock.restart();
 
+		
+
 		while (const std::optional event = window->pollEvent())
 		{
 			if (event->is<sf::Event::Closed>())
 				window->close();
 		}
-
-		// make vector of point birds
-		std::vector<BirdPoints*> pointBirds;
-		BirdPoints* pointBird = new BirdPoints(Resources::textures["bird.png"], { 100, 100 }, scale, 1);
-		pointBirds.push_back(pointBird);
-
-		float playerSpeed = 1000;
+		
 
 		sf::Vector2f velocity(0.0f, 0.0f);
 		//gather player input
@@ -98,6 +157,8 @@ int main()
 
 		
 		balloon.move(velocity);
+
+		spawnPointBirds(pointClock, balloon);
 
 		//Camera Movement
 		if (camera.position.x - balloon.getPosition().x > 200) //left
@@ -128,16 +189,40 @@ int main()
 		tiledRenderer.render(window, Resources::textures["TiledClouds.png"],
 			Resources::textures["TiledClouds.png"].getSize().x, scale, centerTile);
 		circle.setPosition(centerTile);
-		//window->draw(circle);
-
+		
+		std::vector<BirdPoints*> tempBirds;
 		//Render all point birds
 		for (BirdPoints* bp : pointBirds)
 		{
-			bp->render(window);
+			if (bp->checkPlayerCollision(balloon)) {
+				data.totalPoints += bp->pointValue;
+				delete(bp);
+				data.availablePointBirds--;
+			}
+			else {
+				tempBirds.push_back(bp);
+				bp->render(window);
+			}
+			
+
 		}
+		std::string pointMessage = "Points: " + std::to_string(data.totalPoints);
+		sf::View cameraView = camera.GetView(window->getSize());
+		pointUI.setPosition({ cameraView.getCenter().x - cameraView.getSize().x / 2,
+			cameraView.getCenter().y - cameraView.getSize().y / 2 });
+
+		pointUI.setString(pointMessage);
+		std::cout << "Points: " << data.totalPoints << std::endl;
+
+		pointBirds = tempBirds;
+
+		bool circleHit = false;
 
 		//collision thing
 		//.getGlobal position and .findIntersection (takes a rect)
+
+		
+		window->draw(pointUI);
 
 		//render player
 		window->draw(balloon);

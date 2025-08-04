@@ -11,10 +11,12 @@ public:
 	sf::Vector2f scale;
 
 	BirdPoints(sf::Texture& t, sf::Vector2f p, sf::Vector2f s, float pV);
+	bool checkPlayerCollision(sf::Sprite player);
 
 	void render(sf::RenderWindow* window);
 private:
 	sf::Texture texture;
+	sf::Sprite* sprite;
 	
 };
 
