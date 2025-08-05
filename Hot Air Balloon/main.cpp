@@ -25,18 +25,18 @@ void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
 		sf::Vector2f pos;
 		pos.x = player.getPosition().x + (std::rand() % 2000 - 1000);
 		pos.y = player.getPosition().y + (std::rand() % 2000 - 1000);
-		int pointValue = rand() % 6 + 1;
+		int pointValue = rand() % 9 + 1;
 		BirdPoints* pointBird;
 		switch (pointValue) {
 		case 2:
-
 		case 4:
-
+		case 7:
+		case 8:
 		case 1:
 			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1);
 			break;
 		case 6:
-
+		case 9:
 		case 3:
 			pointBird = new BirdPoints(Resources::textures["blueBird.png"], pos, scale, 3);
 			break;
@@ -208,10 +208,12 @@ int main()
 		}
 		std::string pointMessage = "Points: " + std::to_string(data.totalPoints);
 		sf::View cameraView = camera.GetView(window->getSize());
-		pointUI.setPosition({ cameraView.getCenter().x - cameraView.getSize().x / 2,
+		pointUI.setPosition({ (cameraView.getCenter().x - cameraView.getSize().x / 2) + 30,
 			cameraView.getCenter().y - cameraView.getSize().y / 2 });
 
 		pointUI.setString(pointMessage);
+		pointUI.setOutlineColor(sf::Color::Black);
+		pointUI.setOutlineThickness(1.5);
 		std::cout << "Points: " << data.totalPoints << std::endl;
 
 		pointBirds = tempBirds;
