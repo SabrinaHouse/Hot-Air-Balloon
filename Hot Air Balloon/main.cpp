@@ -9,7 +9,7 @@
 std::vector<BirdPoints*> pointBirds;
 sf::Vector2f scale = { 10, 10 };
 
-Camera camera(2000);
+Camera camera(10000);
 struct gameData {
 	int totalPoints = 0;
 	int availablePointBirds = 0;
@@ -28,6 +28,7 @@ void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
 		int pointValue = rand() % 9 + 1;
 		BirdPoints* pointBird;
 		switch (pointValue) {
+		//blank cases waterfall into the cases below them. Only stops if "break" is included
 		case 2:
 		case 4:
 		case 7:
@@ -191,6 +192,8 @@ int main()
 		circle.setPosition(centerTile);
 		
 		std::vector<BirdPoints*> tempBirds;
+
+		int despawnRadius = 3500;
 		//Render all point birds
 		for (BirdPoints* bp : pointBirds)
 		{
@@ -198,8 +201,14 @@ int main()
 				data.totalPoints += bp->pointValue;
 				delete(bp);
 				data.availablePointBirds--;
-			}
-			else {
+			} else if (balloon.getPosition().x - bp->position.x > despawnRadius
+				|| balloon.getPosition().y - bp->position.y > despawnRadius
+				|| bp->position.x - balloon.getPosition().x > despawnRadius
+				|| bp->position.y - balloon.getPosition().y  > despawnRadius) {
+
+				delete(bp);
+				data.availablePointBirds--;
+			} else {
 				tempBirds.push_back(bp);
 				bp->render(window);
 			}
