@@ -5,14 +5,17 @@
 #include "Camera.h"
 #include "TiledRender.h"
 #include "BirdPoints.h"
+#include "Hawk.h"
 
 std::vector<BirdPoints*> pointBirds;
+std::vector<Hawk*> hawks;
 sf::Vector2f scale = { 10, 10 };
 
-Camera camera(10000);
+Camera camera(2000);
 struct gameData {
 	int totalPoints = 0;
 	int availablePointBirds = 0;
+	sf::Vector2f playerPosition = { 0 , 0 };
 };
 
 
@@ -20,8 +23,23 @@ struct gameData {
 //you need to make an object of the struct to access the data within
 gameData data;
 
+void resetGame() {
+	data.totalPoints = 0;
+	for (BirdPoints* bp : pointBirds) {
+		delete bp;
+	}
+	pointBirds.clear();
+	for (Hawk* h : hawks) {
+		delete h;
+	}
+	hawks.clear();
+	data.availablePointBirds = 0;
+	data.playerPosition = { 0, 0 };
+	camera.position = data.playerPosition;
+}
+
 void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
-	if (clock.getElapsedTime().asSeconds() > 1 && data.availablePointBirds < 10 ) {
+	if ((clock.getElapsedTime().asSeconds() > 1 && data.availablePointBirds < 10 ) || pointBirds.size() == 0) {
 		sf::Vector2f pos;
 		pos.x = player.getPosition().x + (std::rand() % 2000 - 1000);
 		pos.y = player.getPosition().y + (std::rand() % 2000 - 1000);
@@ -34,18 +52,18 @@ void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
 		case 7:
 		case 8:
 		case 1:
-			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1);
+			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
 			break;
 		case 6:
 		case 9:
 		case 3:
-			pointBird = new BirdPoints(Resources::textures["blueBird.png"], pos, scale, 3);
+			pointBird = new BirdPoints(Resources::textures["blueBird.png"], pos, scale, 3, 600);
 			break;
 		case 5:
-			pointBird = new BirdPoints(Resources::textures["yellowBird.png"], pos, scale, 5);
+			pointBird = new BirdPoints(Resources::textures["yellowBird.png"], pos, scale, 5, 800);
 			break;
 		default:
-			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1);
+			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
 		};
 		//BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], pos, scale, rand() % 4 + 1);
 		data.availablePointBirds++;
@@ -102,13 +120,15 @@ int main()
 
 	sf::Sprite balloon(Resources::textures["Balloon.png"]);
 	balloon.setOrigin({ 6, 8 });
-	balloon.setPosition({ 0, 0 });
+	balloon.setPosition(data.playerPosition);
 	balloon.setScale({ 10, 10 });
 
+	Hawk* hawk = new Hawk(Resources::textures["BirdFlying1.png"], { 800, 0 }, scale, 50, balloon);
+	hawks.push_back(hawk);
 	//point bird vector
 
-	BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], { 100, 100 }, scale, 1);
-	pointBirds.push_back(pointBird);
+	//BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], { 100, 100 }, scale, 1);
+	//pointBirds.push_back(pointBird);
 
 	float playerSpeed = 1000;
 
@@ -156,10 +176,11 @@ int main()
 			velocity += sf::Vector2f(playerSpeed * deltaTime, 0.0f);
 		}
 
-		
-		balloon.move(velocity);
+		data.playerPosition += velocity;
+		balloon.setPosition(data.playerPosition);
 
 		spawnPointBirds(pointClock, balloon);
+		
 
 		//Camera Movement
 		if (camera.position.x - balloon.getPosition().x > 200) //left
@@ -197,10 +218,13 @@ int main()
 		//Render all point birds
 		for (BirdPoints* bp : pointBirds)
 		{
+			bp->move(deltaTime);
+
 			if (bp->checkPlayerCollision(balloon)) {
 				data.totalPoints += bp->pointValue;
 				delete(bp);
 				data.availablePointBirds--;
+			//despawns birds. make bool function later
 			} else if (balloon.getPosition().x - bp->position.x > despawnRadius
 				|| balloon.getPosition().y - bp->position.y > despawnRadius
 				|| bp->position.x - balloon.getPosition().x > despawnRadius
@@ -212,9 +236,14 @@ int main()
 				tempBirds.push_back(bp);
 				bp->render(window);
 			}
+
+			
+			//float speed = 500 * deltaTime;
+			
 			
 
 		}
+
 		std::string pointMessage = "Points: " + std::to_string(data.totalPoints);
 		sf::View cameraView = camera.GetView(window->getSize());
 		pointUI.setPosition({ (cameraView.getCenter().x - cameraView.getSize().x / 2) + 30,
@@ -223,7 +252,7 @@ int main()
 		pointUI.setString(pointMessage);
 		pointUI.setOutlineColor(sf::Color::Black);
 		pointUI.setOutlineThickness(1.5);
-		std::cout << "Points: " << data.totalPoints << std::endl;
+		//std::cout << "Points: " << data.totalPoints << std::endl;
 
 		pointBirds = tempBirds;
 
@@ -231,10 +260,16 @@ int main()
 
 		//collision thing
 		//.getGlobal position and .findIntersection (takes a rect)
-
+		for (Hawk* h : hawks) {
+			h->move(deltaTime);
+			h->render(window);
+			if (h->checkCollision(balloon)) {
+				resetGame();
+			}
+		}
 		
 		window->draw(pointUI);
-
+		//hawk.render(window);
 		//render player
 		window->draw(balloon);
 		window->display();
