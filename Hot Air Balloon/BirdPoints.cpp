@@ -27,6 +27,8 @@ bool BirdPoints::checkPlayerCollision(sf::Sprite player) {
 	return false;
 }
 
+
+
 void BirdPoints::setAngle() {
 	angle = (std::rand() % 360);
 }

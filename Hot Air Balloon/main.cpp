@@ -10,6 +10,7 @@
 std::vector<BirdPoints*> pointBirds;
 std::vector<Hawk*> hawks;
 sf::Vector2f scale = { 10, 10 };
+float spawnRadius = 100;
 
 Camera camera(2000);
 struct gameData {
@@ -43,31 +44,37 @@ void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
 		sf::Vector2f pos;
 		pos.x = player.getPosition().x + (std::rand() % 2000 - 1000);
 		pos.y = player.getPosition().y + (std::rand() % 2000 - 1000);
-		int pointValue = rand() % 9 + 1;
-		BirdPoints* pointBird;
-		switch (pointValue) {
-		//blank cases waterfall into the cases below them. Only stops if "break" is included
-		case 2:
-		case 4:
-		case 7:
-		case 8:
-		case 1:
-			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
-			break;
-		case 6:
-		case 9:
-		case 3:
-			pointBird = new BirdPoints(Resources::textures["blueBird.png"], pos, scale, 3, 600);
-			break;
-		case 5:
-			pointBird = new BirdPoints(Resources::textures["yellowBird.png"], pos, scale, 5, 800);
-			break;
-		default:
-			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
+		if ((pos.x >= player.getPosition().x + spawnRadius && pos.y >= player.getPosition().y + spawnRadius)
+			|| (pos.x <= player.getPosition().x - spawnRadius && pos.y <= player.getPosition().y - spawnRadius))
+		{
+			int pointValue = rand() % 9 + 1;
+			BirdPoints* pointBird;
+			switch (pointValue) 
+			{
+				//blank cases waterfall into the cases below them. Only stops if "break" is included
+			case 2:
+			case 4:
+			case 7:
+			case 8:
+			case 1:
+				pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
+				break;
+			case 6:
+			case 9:
+			case 3:
+				pointBird = new BirdPoints(Resources::textures["blueBird.png"], pos, scale, 3, 600);
+				break;
+			case 5:
+				pointBird = new BirdPoints(Resources::textures["yellowBird.png"], pos, scale, 5, 800);
+				break;
+			default:
+				pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
+			}
+			data.availablePointBirds++;
+			pointBirds.push_back(pointBird);
 		};
 		//BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], pos, scale, rand() % 4 + 1);
-		data.availablePointBirds++;
-		pointBirds.push_back(pointBird);
+		
 		clock.restart();
 	}
 }
