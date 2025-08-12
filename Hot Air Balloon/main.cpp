@@ -5,6 +5,7 @@
 #include "TiledRender.h"
 #include "BirdPoints.h"
 #include "Hawk.h"
+#include "Menu.h"
 
 std::vector<BirdPoints*> pointBirds;
 std::vector<Hawk*> hawks;
@@ -14,6 +15,9 @@ float spawnRadius = 100;
 //make window and camera
 sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode({ 1900, 1800 }), "Hot Air Balloon :3");
 Camera camera(2000);
+
+
+bool inMenu = true;
 
 struct gameData {
 	int totalPoints = 0;
@@ -40,6 +44,7 @@ void resetGame() {
 	data.availablePointBirds = 0;
 	data.playerPosition = { 0, 0 };
 	camera.position = data.playerPosition;
+	inMenu = true;
 }
 
 void spawnHawks(sf::Clock& clock, sf::Sprite player) {
@@ -159,7 +164,9 @@ int main()
 			}
 	}
 
-	
+	camera.position = { 0, 0 };
+
+	Menu menu(camera, window);
 
 	//if (!balloonTexture.loadFromFile("resources/textures/Balloon.png"))
 	//{
@@ -187,7 +194,7 @@ int main()
 
 	
 
-	camera.position = { 0, 0 };
+	
 	sf::Text pointUI(Resources::fonts["StackedPixel.ttf"]);
 	pointUI.setScale({3, 3});
 	
@@ -204,126 +211,158 @@ int main()
 		{
 			if (event->is<sf::Event::Closed>())
 				window->close();
+			if (event->is<sf::Event::KeyReleased>()) {
+				auto key = event->getIf<sf::Event::KeyReleased>();
+				if (key->code == sf::Keyboard::Key::Up || key->code == sf::Keyboard::Key::W) {
+					menu.moveUp();
+				}
+				if (key->code == sf::Keyboard::Key::Down || key->code == sf::Keyboard::Key::S) {
+					menu.moveDown();
+				}
+				if (key->code == sf::Keyboard::Key::Enter || key->code == sf::Keyboard::Key::Space) {
+					switch (menu.getPressedItem()) {
+					case 0:
+						inMenu = false;
+						break;
+					case 1:
+						window->close();
+						break;
+					}
+				}
+				if (key->code == sf::Keyboard::Key::Escape) {
+					inMenu = true;
+				}
+			}
 		}
 		
+		if (!inMenu) {
+			sf::Vector2f velocity(0.0f, 0.0f);
+			//gather player input
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W))
+			{
+				velocity += sf::Vector2f(0.0f, -playerSpeed * deltaTime);
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A))
+			{
+				velocity += sf::Vector2f(-playerSpeed * deltaTime, 0.0f);
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S))
+			{
+				velocity += sf::Vector2f(0.0f, playerSpeed * deltaTime);
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D))
+			{
+				velocity += sf::Vector2f(playerSpeed * deltaTime, 0.0f);
+			}
 
-		sf::Vector2f velocity(0.0f, 0.0f);
-		//gather player input
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W))
-		{
-			velocity += sf::Vector2f(0.0f, -playerSpeed * deltaTime);
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A))
-		{
-			velocity += sf::Vector2f(-playerSpeed * deltaTime, 0.0f);
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S))
-		{
-			velocity += sf::Vector2f(0.0f, playerSpeed * deltaTime);
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D))
-		{
-			velocity += sf::Vector2f(playerSpeed * deltaTime, 0.0f);
-		}
+			data.playerPosition += velocity;
+			balloon.setPosition(data.playerPosition);
 
-		data.playerPosition += velocity;
-		balloon.setPosition(data.playerPosition);
+			spawnPointBirds(pointClock, balloon);
+			spawnHawks(hawkClock, balloon);
 
-		spawnPointBirds(pointClock, balloon);
-		spawnHawks(hawkClock, balloon);
-		
 
-		//Camera Movement
-		if (camera.position.x - balloon.getPosition().x > 200) //left
-		{
-			camera.position.x += velocity.x;
-		}
-		else if (camera.position.x - balloon.getPosition().x < -200) //right
-		{
-			camera.position.x += velocity.x;
-		}
+			//Camera Movement
+			if (camera.position.x - balloon.getPosition().x > 200) //left
+			{
+				camera.position.x += velocity.x;
+			}
+			else if (camera.position.x - balloon.getPosition().x < -200) //right
+			{
+				camera.position.x += velocity.x;
+			}
 
-		if (camera.position.y - balloon.getPosition().y > 200) //down
-		{
-			camera.position.y += velocity.y;
-		}
-		else if (camera.position.y - balloon.getPosition().y < -200) //up
-		{
-			camera.position.y += velocity.y;
-		}
+			if (camera.position.y - balloon.getPosition().y > 200) //down
+			{
+				camera.position.y += velocity.y;
+			}
+			else if (camera.position.y - balloon.getPosition().y < -200) //up
+			{
+				camera.position.y += velocity.y;
+			}
 
-		//set window and camera view
+			//set window and camera view
+			window->clear();
+			window->setView(camera.GetView(window->getSize()));
+			//window->draw(background);
+
+			//render background
+			tiledRenderer.updateCenterTile(window, centerTile, camera, Resources::textures["TiledClouds.png"].getSize().x, scale.x);
+			tiledRenderer.render(window, Resources::textures["TiledClouds.png"],
+				Resources::textures["TiledClouds.png"].getSize().x, scale, centerTile);
+			circle.setPosition(centerTile);
+
+			std::vector<BirdPoints*> tempBirds;
+
+			int despawnRadius = 3500;
+			//Render all point birds
+			for (BirdPoints* bp : pointBirds)
+			{
+				bp->move(deltaTime);
+
+				if (bp->checkPlayerCollision(balloon)) {
+					data.totalPoints += bp->pointValue;
+					delete(bp);
+					data.availablePointBirds--;
+					//despawns birds. make bool function later
+				}
+				else if (balloon.getPosition().x - bp->position.x > despawnRadius
+					|| balloon.getPosition().y - bp->position.y > despawnRadius
+					|| bp->position.x - balloon.getPosition().x > despawnRadius
+					|| bp->position.y - balloon.getPosition().y > despawnRadius) {
+
+					delete(bp);
+					data.availablePointBirds--;
+				}
+				else {
+					tempBirds.push_back(bp);
+					bp->render(window);
+				}
+
+
+				//float speed = 500 * deltaTime;
+
+
+
+			}
+
+			std::string pointMessage = "Points: " + std::to_string(data.totalPoints);
+			sf::View cameraView = camera.GetView(window->getSize());
+			pointUI.setPosition({ (cameraView.getCenter().x - cameraView.getSize().x / 2) + 30,
+				cameraView.getCenter().y - cameraView.getSize().y / 2 });
+
+			pointUI.setString(pointMessage);
+			pointUI.setOutlineColor(sf::Color::Black);
+			pointUI.setOutlineThickness(1.5);
+			//std::cout << "Points: " << data.totalPoints << std::endl;
+
+			pointBirds = tempBirds;
+
+			//collision thing
+			//.getGlobal position and .findIntersection (takes a rect)
+			for (Hawk* h : hawks) {
+				h->move(deltaTime);
+				h->render(window);
+				if (h->checkCollision(balloon)) {
+					resetGame();
+					break;
+				}
+			}
+
+			window->draw(pointUI);
+			//hawk.render(window);
+			//render player
+			window->draw(balloon);
+			
+		}
+	else {
 		window->clear();
+		background.setPosition(camera.position);
+		window->draw(background);
 		window->setView(camera.GetView(window->getSize()));
-		//window->draw(background);
-
-		//render background
-		tiledRenderer.updateCenterTile(window, centerTile, camera, Resources::textures["TiledClouds.png"].getSize().x, scale.x);
-		tiledRenderer.render(window, Resources::textures["TiledClouds.png"],
-			Resources::textures["TiledClouds.png"].getSize().x, scale, centerTile);
-		circle.setPosition(centerTile);
-		
-		std::vector<BirdPoints*> tempBirds;
-
-		int despawnRadius = 3500;
-		//Render all point birds
-		for (BirdPoints* bp : pointBirds)
-		{
-			bp->move(deltaTime);
-
-			if (bp->checkPlayerCollision(balloon)) {
-				data.totalPoints += bp->pointValue;
-				delete(bp);
-				data.availablePointBirds--;
-			//despawns birds. make bool function later
-			} else if (balloon.getPosition().x - bp->position.x > despawnRadius
-				|| balloon.getPosition().y - bp->position.y > despawnRadius
-				|| bp->position.x - balloon.getPosition().x > despawnRadius
-				|| bp->position.y - balloon.getPosition().y  > despawnRadius) {
-
-				delete(bp);
-				data.availablePointBirds--;
-			} else {
-				tempBirds.push_back(bp);
-				bp->render(window);
-			}
-
-			
-			//float speed = 500 * deltaTime;
-			
-			
-
-		}
-
-		std::string pointMessage = "Points: " + std::to_string(data.totalPoints);
-		sf::View cameraView = camera.GetView(window->getSize());
-		pointUI.setPosition({ (cameraView.getCenter().x - cameraView.getSize().x / 2) + 30,
-			cameraView.getCenter().y - cameraView.getSize().y / 2 });
-
-		pointUI.setString(pointMessage);
-		pointUI.setOutlineColor(sf::Color::Black);
-		pointUI.setOutlineThickness(1.5);
-		//std::cout << "Points: " << data.totalPoints << std::endl;
-
-		pointBirds = tempBirds;
-
-		bool circleHit = false;
-
-		//collision thing
-		//.getGlobal position and .findIntersection (takes a rect)
-		for (Hawk* h : hawks) {
-			h->move(deltaTime);
-			h->render(window);
-			if (h->checkCollision(balloon)) {
-				resetGame();
-				break;
-			}
-		}
-		
-		window->draw(pointUI);
-		//hawk.render(window);
-		//render player
-		window->draw(balloon);
+		menu.updatePosition(camera, window);
+		menu.draw(window);
+	}
 		window->display();
 
 	}
