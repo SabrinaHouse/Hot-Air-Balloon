@@ -1,6 +1,5 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
-#include "Game.h"
 #include "Resources.h"
 #include "Camera.h"
 #include "TiledRender.h"
@@ -12,11 +11,15 @@ std::vector<Hawk*> hawks;
 sf::Vector2f scale = { 10, 10 };
 float spawnRadius = 100;
 
+//make window and camera
+sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode({ 1900, 1800 }), "Hot Air Balloon :3");
 Camera camera(2000);
+
 struct gameData {
 	int totalPoints = 0;
 	int availablePointBirds = 0;
 	sf::Vector2f playerPosition = { 0 , 0 };
+	int maxHawks = 2;
 };
 
 
@@ -39,44 +42,89 @@ void resetGame() {
 	camera.position = data.playerPosition;
 }
 
+void spawnHawks(sf::Clock& clock, sf::Sprite player) {
+	if (hawks.size() >= data.maxHawks) {
+		return;
+	}
+	if (clock.getElapsedTime().asSeconds() > 3) {
+		sf::Vector2f pos;
+
+		int side = rand() % 4;
+		sf::View view = camera.GetView(window->getSize());
+		int xMin = view.getCenter().x - (view.getSize().x / 2.0), xMax = view.getCenter().x + (view.getSize().x / 2.0);
+		int yMin = view.getCenter().y - (view.getSize().y / 2.0),  yMax = view.getCenter().y + (view.getSize().y / 2.0);
+
+		switch (side)
+		{
+		case 0: //left
+			pos.x = xMin;
+			pos.y = rand() % (yMax - yMin) + yMin;
+			break;
+		case 1: //right
+			pos.x = xMax;
+			pos.y = rand() % (yMax - yMin) + yMin;
+			break;
+		case 2: // top
+			pos.y = yMin;
+			pos.x = rand() % (xMax - xMin) + xMin;
+			break;
+		case 3: // bottom
+			pos.y = yMax;
+			pos.x = rand() % (xMax - xMin) + xMin;
+			break;
+		}
+
+		Hawk* hawk = new Hawk(Resources::textures["BirdFlying1.png"], pos, scale, 1200, player);
+		hawks.push_back(hawk);
+		clock.restart();
+	}
+	
+
+
+}
+
 void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
-	if ((clock.getElapsedTime().asSeconds() > 1 && data.availablePointBirds < 10 ) || pointBirds.size() == 0) {
+	if ((clock.getElapsedTime().asSeconds() > 1 && pointBirds.size() < 10) || pointBirds.size() == 0) {
+		//std::cout << "Bird Spawn" << std::endl;
 		sf::Vector2f pos;
 		pos.x = player.getPosition().x + (std::rand() % 2000 - 1000);
 		pos.y = player.getPosition().y + (std::rand() % 2000 - 1000);
-		if ((pos.x >= player.getPosition().x + spawnRadius && pos.y >= player.getPosition().y + spawnRadius)
-			|| (pos.x <= player.getPosition().x - spawnRadius && pos.y <= player.getPosition().y - spawnRadius))
+		if ((pos.x >= player.getPosition().x + spawnRadius && pos.y >= player.getPosition().y + spawnRadius)) {
+			pos.x += spawnRadius;
+		}
+		else if (pos.x <= player.getPosition().x - spawnRadius && pos.y <= player.getPosition().y - spawnRadius) {
+			pos.x -= spawnRadius;
+		}
+
+		int pointValue = rand() % 9 + 1;
+		BirdPoints* pointBird;
+		switch (pointValue)
 		{
-			int pointValue = rand() % 9 + 1;
-			BirdPoints* pointBird;
-			switch (pointValue) 
-			{
-				//blank cases waterfall into the cases below them. Only stops if "break" is included
-			case 2:
-			case 4:
-			case 7:
-			case 8:
-			case 1:
-				pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
-				break;
-			case 6:
-			case 9:
-			case 3:
-				pointBird = new BirdPoints(Resources::textures["blueBird.png"], pos, scale, 3, 600);
-				break;
-			case 5:
-				pointBird = new BirdPoints(Resources::textures["yellowBird.png"], pos, scale, 5, 800);
-				break;
-			default:
-				pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
-			}
-			data.availablePointBirds++;
-			pointBirds.push_back(pointBird);
-		};
-		//BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], pos, scale, rand() % 4 + 1);
-		
+			//blank cases waterfall into the cases below them. Only stops if "break" is included
+		case 2:
+		case 4:
+		case 7:
+		case 8:
+		case 1:
+			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
+			break;
+		case 6:
+		case 9:
+		case 3:
+			pointBird = new BirdPoints(Resources::textures["blueBird.png"], pos, scale, 3, 600);
+			break;
+		case 5:
+			pointBird = new BirdPoints(Resources::textures["yellowBird.png"], pos, scale, 5, 800);
+			break;
+		default:
+			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
+		}
+		data.availablePointBirds++;
+		pointBirds.push_back(pointBird);
 		clock.restart();
 	}
+		//BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], pos, scale, rand() % 4 + 1);
+		
 }
 
 int main()
@@ -84,8 +132,7 @@ int main()
 
 	sf::Clock frameClock;
 	sf::Clock pointClock;
-
-	sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode({ 1900, 1800 }), "Hot Air Balloon :3");
+	sf::Clock hawkClock;
 
 	sf::Vector2f centerTile = { 100, 100 };
 	
@@ -129,10 +176,6 @@ int main()
 	balloon.setOrigin({ 6, 8 });
 	balloon.setPosition(data.playerPosition);
 	balloon.setScale({ 10, 10 });
-
-	Hawk* hawk = new Hawk(Resources::textures["BirdFlying1.png"], { 800, 0 }, scale, 50, balloon);
-	hawks.push_back(hawk);
-	//point bird vector
 
 	//BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], { 100, 100 }, scale, 1);
 	//pointBirds.push_back(pointBird);
@@ -187,6 +230,7 @@ int main()
 		balloon.setPosition(data.playerPosition);
 
 		spawnPointBirds(pointClock, balloon);
+		spawnHawks(hawkClock, balloon);
 		
 
 		//Camera Movement
@@ -272,6 +316,7 @@ int main()
 			h->render(window);
 			if (h->checkCollision(balloon)) {
 				resetGame();
+				break;
 			}
 		}
 		
