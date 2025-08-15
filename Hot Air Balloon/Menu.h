@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "Resources.h"
 #include "Camera.h"
+#include <iostream>
 
 #define MAX_NUMBER_OF_ITEMS 3
 
@@ -16,6 +17,7 @@ public:
 	void updatePosition(Camera camera, sf::RenderWindow* window);
 	void moveUp();
 	void moveDown();
+	void updateHighScore(int newScore);
 	const int getPressedItem() 
 	{ return selectedItemIndex; }
 	

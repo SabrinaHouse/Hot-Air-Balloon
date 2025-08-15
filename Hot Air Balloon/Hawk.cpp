@@ -31,3 +31,13 @@ bool Hawk::checkCollision(sf::Sprite player) {
 	}
 	return false;
 }
+
+bool Hawk::despawnHawk(sf::Sprite player, int despawnRadius) {
+	if (player.getPosition().x - position.x > despawnRadius
+		|| player.getPosition().y - position.y > despawnRadius
+		|| position.x - player.getPosition().x > despawnRadius
+		|| position.y - player.getPosition().y > despawnRadius) {
+		return true;
+	}
+	return false;
+}

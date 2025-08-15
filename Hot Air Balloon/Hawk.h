@@ -12,6 +12,7 @@ public:
 	void render(sf::RenderWindow* window);
 	void move(float deltaTime);
 	bool checkCollision(sf::Sprite player);
+	bool despawnHawk(sf::Sprite player,int despawnRadius);
 	
 
 private:

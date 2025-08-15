@@ -11,6 +11,10 @@ std::vector<BirdPoints*> pointBirds;
 std::vector<Hawk*> hawks;
 sf::Vector2f scale = { 10, 10 };
 float spawnRadius = 100;
+int hawkDespawnRadius = 4000;
+float playerSpeed = 1000;
+int despawnRadius = 3500;
+std::string highScoreMessage = "High Score: 0";
 
 //make window and camera
 sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode({ 1900, 1800 }), "Hot Air Balloon :3");
@@ -23,7 +27,8 @@ struct gameData {
 	int totalPoints = 0;
 	int availablePointBirds = 0;
 	sf::Vector2f playerPosition = { 0 , 0 };
-	int maxHawks = 2;
+	int maxHawks = 3;
+	int highScore = 0;
 };
 
 
@@ -32,6 +37,10 @@ struct gameData {
 gameData data;
 
 void resetGame() {
+	if (data.totalPoints > data.highScore) {
+		data.highScore = data.totalPoints;
+		//std::string highScoreMessage = std::string("High Score :") + std::to_string(data.highScore);
+	}
 	data.totalPoints = 0;
 	for (BirdPoints* bp : pointBirds) {
 		delete bp;
@@ -51,7 +60,7 @@ void spawnHawks(sf::Clock& clock, sf::Sprite player) {
 	if (hawks.size() >= data.maxHawks) {
 		return;
 	}
-	if (clock.getElapsedTime().asSeconds() > 3) {
+	if (clock.getElapsedTime().asSeconds() > 7) {
 		sf::Vector2f pos;
 
 		int side = rand() % 4;
@@ -167,6 +176,8 @@ int main()
 	camera.position = { 0, 0 };
 
 	Menu menu(camera, window);
+	
+	
 
 	//if (!balloonTexture.loadFromFile("resources/textures/Balloon.png"))
 	//{
@@ -183,16 +194,6 @@ int main()
 	balloon.setOrigin({ 6, 8 });
 	balloon.setPosition(data.playerPosition);
 	balloon.setScale({ 10, 10 });
-
-	//BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], { 100, 100 }, scale, 1);
-	//pointBirds.push_back(pointBird);
-
-	float playerSpeed = 1000;
-
-
-	//balloon.setTextureRect(sf::IntRect({ 0,0 }, { 11 ,16 })); (You don't need this unless working from an image with multiple sprites
-
-	
 
 	
 	sf::Text pointUI(Resources::fonts["StackedPixel.ttf"]);
@@ -230,6 +231,10 @@ int main()
 					}
 				}
 				if (key->code == sf::Keyboard::Key::Escape) {
+					if (data.totalPoints > data.highScore) {
+						data.highScore = data.totalPoints;
+					}
+					menu.updateHighScore(data.highScore);
 					inMenu = true;
 				}
 			}
@@ -294,7 +299,6 @@ int main()
 
 			std::vector<BirdPoints*> tempBirds;
 
-			int despawnRadius = 3500;
 			//Render all point birds
 			for (BirdPoints* bp : pointBirds)
 			{
@@ -319,11 +323,6 @@ int main()
 					bp->render(window);
 				}
 
-
-				//float speed = 500 * deltaTime;
-
-
-
 			}
 
 			std::string pointMessage = "Points: " + std::to_string(data.totalPoints);
@@ -334,23 +333,35 @@ int main()
 			pointUI.setString(pointMessage);
 			pointUI.setOutlineColor(sf::Color::Black);
 			pointUI.setOutlineThickness(1.5);
-			//std::cout << "Points: " << data.totalPoints << std::endl;
 
 			pointBirds = tempBirds;
 
 			//collision thing
 			//.getGlobal position and .findIntersection (takes a rect)
+			std::vector<Hawk*> tempHawks;
+
 			for (Hawk* h : hawks) {
-				h->move(deltaTime);
-				h->render(window);
-				if (h->checkCollision(balloon)) {
-					resetGame();
-					break;
+				if (hawks.size() > 0) {
+					h->move(deltaTime);
+					if (h->checkCollision(balloon)) {
+						resetGame();
+						break;
+					}
+				} 
+				if (h->despawnHawk(balloon, hawkDespawnRadius) && hawks.size() > 0){
+					//delete h;
+					//std::cout << "hawk despawned" << std::endl;
 				}
+				else {
+					//tempHawks.pushback(h);
+					h->render(window);
+				}
+				
+
 			}
 
 			window->draw(pointUI);
-			//hawk.render(window);
+			menu.updateHighScore(data.highScore);
 			//render player
 			window->draw(balloon);
 			
