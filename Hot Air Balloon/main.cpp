@@ -14,7 +14,8 @@ float spawnRadius = 100;
 int hawkDespawnRadius = 2000;
 float playerSpeed = 1000;
 int despawnRadius = 3500;
-int hawkTime = 10;
+float hawkTime = 9;
+int hawkSpeed = 1000;
 std::string highScoreMessage = "High Score: 0";
 
 //make window and camera
@@ -50,6 +51,8 @@ void resetGame() {
 		delete h;
 	}
 	hawks.clear();
+	hawkTime = 9;
+	hawkSpeed = 1000;
 	data.availablePointBirds = 0;
 	data.playerPosition = { 0, 0 };
 	camera.position = data.playerPosition;
@@ -90,7 +93,7 @@ void spawnHawks(sf::Clock& clock, sf::Sprite player) {
 			break;
 		}
 
-		Hawk* hawk = new Hawk(Resources::textures["BirdFlying1.png"], pos, scale, 1200, player);
+		Hawk* hawk = new Hawk(Resources::textures["BirdFlying1.png"], pos, scale, hawkSpeed , player);
 		hawks.push_back(hawk);
 		clock.restart();
 	}
@@ -300,6 +303,8 @@ int main()
 
 				if (bp->checkPlayerCollision(balloon)) {
 					data.totalPoints += (int)bp->pointValue;
+					hawkSpeed = hawkSpeed + (bp->pointValue * 5);
+					hawkTime = hawkTime - 0.005;
 					delete(bp);
 					data.availablePointBirds--;
 				}
@@ -344,8 +349,8 @@ int main()
 					auto it = std::find(hawks.begin(), hawks.end(), h);
 					int index = std::distance(hawks.begin(), it);
 					hawks.erase(hawks.begin() + index);
-					std::cout << index << std::endl;
-					std::cout << "hawk despawned" << std::endl;
+					//std::cout << index << std::endl;
+					//std::cout << "hawk despawned" << std::endl;
 				}
 				else {
 					tempHawks.push_back(h);
