@@ -11,9 +11,10 @@ std::vector<BirdPoints*> pointBirds;
 std::vector<Hawk*> hawks;
 sf::Vector2f scale = { 10, 10 };
 float spawnRadius = 100;
-int hawkDespawnRadius = 4000;
+int hawkDespawnRadius = 2000;
 float playerSpeed = 1000;
 int despawnRadius = 3500;
+int hawkTime = 10;
 std::string highScoreMessage = "High Score: 0";
 
 //make window and camera
@@ -27,10 +28,9 @@ struct gameData {
 	int totalPoints = 0;
 	int availablePointBirds = 0;
 	sf::Vector2f playerPosition = { 0 , 0 };
-	int maxHawks = 3;
+	int maxHawks = 4;
 	int highScore = 0;
 };
-
 
 
 //you need to make an object of the struct to access the data within
@@ -60,13 +60,15 @@ void spawnHawks(sf::Clock& clock, sf::Sprite player) {
 	if (hawks.size() >= data.maxHawks) {
 		return;
 	}
-	if (clock.getElapsedTime().asSeconds() > 7) {
+	if (clock.getElapsedTime().asSeconds() > hawkTime) {
 		sf::Vector2f pos;
 
 		int side = rand() % 4;
 		sf::View view = camera.GetView(window->getSize());
-		int xMin = view.getCenter().x - (view.getSize().x / 2.0), xMax = view.getCenter().x + (view.getSize().x / 2.0);
-		int yMin = view.getCenter().y - (view.getSize().y / 2.0),  yMax = view.getCenter().y + (view.getSize().y / 2.0);
+		int xMin = (int)( view.getCenter().x - (view.getSize().x / 2.0));
+		int xMax = (int)( view.getCenter().x + (view.getSize().x / 2.0));
+		int yMin = (int)( view.getCenter().y - (view.getSize().y / 2.0));
+		int yMax = (int)( view.getCenter().y + (view.getSize().y / 2.0));
 
 		switch (side)
 		{
@@ -176,14 +178,6 @@ int main()
 	camera.position = { 0, 0 };
 
 	Menu menu(camera, window);
-	
-	
-
-	//if (!balloonTexture.loadFromFile("resources/textures/Balloon.png"))
-	//{
-	//	std::cout << "Could not load file resources/textures/Balloon.png" << std::endl;
-	//	return -1;
-	//} 
 
 	sf::Sprite background(Resources::textures["TiledClouds.png"]);
 	background.setOrigin({ 150, 150 });
@@ -305,10 +299,9 @@ int main()
 				bp->move(deltaTime);
 
 				if (bp->checkPlayerCollision(balloon)) {
-					data.totalPoints += bp->pointValue;
+					data.totalPoints += (int)bp->pointValue;
 					delete(bp);
 					data.availablePointBirds--;
-					//despawns birds. make bool function later
 				}
 				else if (balloon.getPosition().x - bp->position.x > despawnRadius
 					|| balloon.getPosition().y - bp->position.y > despawnRadius
@@ -341,19 +334,21 @@ int main()
 			std::vector<Hawk*> tempHawks;
 
 			for (Hawk* h : hawks) {
-				if (hawks.size() > 0) {
-					h->move(deltaTime);
-					if (h->checkCollision(balloon)) {
-						resetGame();
-						break;
-					}
-				} 
-				if (h->despawnHawk(balloon, hawkDespawnRadius) && hawks.size() > 0){
-					//delete h;
-					//std::cout << "hawk despawned" << std::endl;
+				h->move(deltaTime);
+
+				if (h->checkCollision(balloon)) {
+					resetGame();
+					break;
+				}
+				else if (h->despawnHawk(balloon, hawkDespawnRadius) && hawks.size() > 0) {
+					auto it = std::find(hawks.begin(), hawks.end(), h);
+					int index = std::distance(hawks.begin(), it);
+					hawks.erase(hawks.begin() + index);
+					std::cout << index << std::endl;
+					std::cout << "hawk despawned" << std::endl;
 				}
 				else {
-					//tempHawks.pushback(h);
+					tempHawks.push_back(h);
 					h->render(window);
 				}
 				
