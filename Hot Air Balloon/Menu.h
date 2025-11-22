@@ -6,6 +6,8 @@
 
 #define MAX_NUMBER_OF_ITEMS 3
 
+//menu screen that appears before player, after dying, and when you pause
+
 class Menu
 {
 public:

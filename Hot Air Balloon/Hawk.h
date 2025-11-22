@@ -2,6 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
+//hawks spawn at the edges of the screen and shoot off in a straight line towards the player
+
 class Hawk 
 {
 

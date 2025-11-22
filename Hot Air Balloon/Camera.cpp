@@ -3,7 +3,6 @@
 
 Camera::Camera(float zoomLevel)
 	: zoomLevel(zoomLevel)
-
 {
 }
 

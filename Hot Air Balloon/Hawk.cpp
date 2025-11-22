@@ -23,15 +23,16 @@ void Hawk::move(float deltaTime) {
 
 }
 
+//check if hawk overlaps the player
 bool Hawk::checkCollision(sf::Sprite player) {
 	if (const std::optional intersection = player.getGlobalBounds().findIntersection(sprite->getGlobalBounds()))
 	{
-		std::cout << "game over" << std::endl;
 		return true;
 	}
 	return false;
 }
 
+//check if hawk has left reasonable range from player
 bool Hawk::despawnHawk(sf::Sprite player, int despawnRadius) {
 	if (player.getPosition().x - position.x > despawnRadius
 		|| player.getPosition().y - position.y > despawnRadius

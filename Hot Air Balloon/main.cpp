@@ -7,6 +7,7 @@
 #include "Hawk.h"
 #include "Menu.h"
 
+//starting data
 std::vector<BirdPoints*> pointBirds;
 std::vector<Hawk*> hawks;
 sf::Vector2f scale = { 10, 10 };
@@ -25,6 +26,7 @@ Camera camera(2000);
 
 bool inMenu = true;
 
+//data that will change throughout the game
 struct gameData {
 	int totalPoints = 0;
 	int availablePointBirds = 0;
@@ -37,10 +39,10 @@ struct gameData {
 //you need to make an object of the struct to access the data within
 gameData data;
 
+//resetings all data changed during game
 void resetGame() {
 	if (data.totalPoints > data.highScore) {
 		data.highScore = data.totalPoints;
-		//std::string highScoreMessage = std::string("High Score :") + std::to_string(data.highScore);
 	}
 	data.totalPoints = 0;
 	for (BirdPoints* bp : pointBirds) {
@@ -59,6 +61,7 @@ void resetGame() {
 	inMenu = true;
 }
 
+//hawks randomly spawn on the edges of your screen
 void spawnHawks(sf::Clock& clock, sf::Sprite player) {
 	if (hawks.size() >= data.maxHawks) {
 		return;
@@ -97,14 +100,11 @@ void spawnHawks(sf::Clock& clock, sf::Sprite player) {
 		hawks.push_back(hawk);
 		clock.restart();
 	}
-	
-
-
 }
 
+//birds spawn randomly around the player
 void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
 	if ((clock.getElapsedTime().asSeconds() > 1 && pointBirds.size() < 10) || pointBirds.size() == 0) {
-		//std::cout << "Bird Spawn" << std::endl;
 		sf::Vector2f pos;
 		pos.x = player.getPosition().x + (std::rand() % 2000 - 1000);
 		pos.y = player.getPosition().y + (std::rand() % 2000 - 1000);
@@ -120,6 +120,7 @@ void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
 		switch (pointValue)
 		{
 			//blank cases waterfall into the cases below them. Only stops if "break" is included
+			//pink birds are most common, worth 1 point
 		case 2:
 		case 4:
 		case 7:
@@ -127,23 +128,24 @@ void spawnPointBirds(sf::Clock& clock, sf::Sprite player) {
 		case 1:
 			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
 			break;
+			//blue bird is second common, worth 3 points
 		case 6:
 		case 9:
 		case 3:
 			pointBird = new BirdPoints(Resources::textures["blueBird.png"], pos, scale, 3, 600);
 			break;
 		case 5:
+			//yellow bird is least common, worth 5 points
 			pointBird = new BirdPoints(Resources::textures["yellowBird.png"], pos, scale, 5, 800);
 			break;
 		default:
+			//incase switch case fails, spawn most common bird (pink)
 			pointBird = new BirdPoints(Resources::textures["pinkBird.png"], pos, scale, 1, 400);
 		}
 		data.availablePointBirds++;
 		pointBirds.push_back(pointBird);
 		clock.restart();
-	}
-		//BirdPoints* pointBird = new BirdPoints(Resources::textures["Bird.png"], pos, scale, rand() % 4 + 1);
-		
+	}	
 }
 
 int main()
@@ -154,16 +156,9 @@ int main()
 	sf::Clock hawkClock;
 
 	sf::Vector2f centerTile = { 100, 100 };
-	
-	sf::CircleShape circle;
 
 	TiledRender tiledRenderer;
 
-	circle.setFillColor(sf::Color::Blue);
-	circle.setRadius(10);
-	circle.setScale(scale);
-
-	// file.path().extension() == ".ttf")
 
 	//sets up loading images, you dont need to retype above for every image
 	for (const auto& file : std::filesystem::directory_iterator("./resources/textures"))
@@ -203,21 +198,20 @@ int main()
 		float deltaTime = frameClock.getElapsedTime().asSeconds();
 		frameClock.restart();
 
-		
-
 		while (const std::optional event = window->pollEvent())
 		{
 			if (event->is<sf::Event::Closed>())
 				window->close();
+			//menu navigation
 			if (event->is<sf::Event::KeyReleased>()) {
 				auto key = event->getIf<sf::Event::KeyReleased>();
-				if (key->code == sf::Keyboard::Key::Up || key->code == sf::Keyboard::Key::W) {
+				if (key->code == sf::Keyboard::Key::Up || key->code == sf::Keyboard::Key::W) { //UP
 					menu.moveUp();
 				}
-				if (key->code == sf::Keyboard::Key::Down || key->code == sf::Keyboard::Key::S) {
+				if (key->code == sf::Keyboard::Key::Down || key->code == sf::Keyboard::Key::S) { //DOWN
 					menu.moveDown();
 				}
-				if (key->code == sf::Keyboard::Key::Enter || key->code == sf::Keyboard::Key::Space) {
+				if (key->code == sf::Keyboard::Key::Enter || key->code == sf::Keyboard::Key::Space) { //SELECT
 					switch (menu.getPressedItem()) {
 					case 0:
 						inMenu = false;
@@ -286,24 +280,23 @@ int main()
 			//set window and camera view
 			window->clear();
 			window->setView(camera.GetView(window->getSize()));
-			//window->draw(background);
 
 			//render background
 			tiledRenderer.updateCenterTile(window, centerTile, camera, Resources::textures["TiledClouds.png"].getSize().x, scale.x);
 			tiledRenderer.render(window, Resources::textures["TiledClouds.png"],
 				Resources::textures["TiledClouds.png"].getSize().x, scale, centerTile);
-			circle.setPosition(centerTile);
 
 			std::vector<BirdPoints*> tempBirds;
 
-			//Render all point birds
+			//Render all point birds and check to make sure they have not gone too far
 			for (BirdPoints* bp : pointBirds)
 			{
 				bp->move(deltaTime);
 
 				if (bp->checkPlayerCollision(balloon)) {
 					data.totalPoints += (int)bp->pointValue;
-					hawkSpeed = hawkSpeed + (bp->pointValue * 5);
+					//edit hawk speed and frequency based on points
+					hawkSpeed = hawkSpeed + (bp->pointValue * 7);
 					hawkTime = hawkTime - 0.005;
 					delete(bp);
 					data.availablePointBirds--;
@@ -323,41 +316,37 @@ int main()
 
 			}
 
-			std::string pointMessage = "Points: " + std::to_string(data.totalPoints);
 			sf::View cameraView = camera.GetView(window->getSize());
+
+			//highscore
+			std::string pointMessage = "Points: " + std::to_string(data.totalPoints);
 			pointUI.setPosition({ (cameraView.getCenter().x - cameraView.getSize().x / 2) + 30,
 				cameraView.getCenter().y - cameraView.getSize().y / 2 });
-
 			pointUI.setString(pointMessage);
 			pointUI.setOutlineColor(sf::Color::Black);
 			pointUI.setOutlineThickness(1.5);
 
 			pointBirds = tempBirds;
-
-			//collision thing
-			//.getGlobal position and .findIntersection (takes a rect)
 			std::vector<Hawk*> tempHawks;
 
+			//checking to make sure hawks have not hit player or gone too far
 			for (Hawk* h : hawks) {
 				h->move(deltaTime);
 
 				if (h->checkCollision(balloon)) {
 					resetGame();
+					hawkClock.restart();
 					break;
 				}
 				else if (h->despawnHawk(balloon, hawkDespawnRadius) && hawks.size() > 0) {
 					auto it = std::find(hawks.begin(), hawks.end(), h);
 					int index = std::distance(hawks.begin(), it);
 					hawks.erase(hawks.begin() + index);
-					//std::cout << index << std::endl;
-					//std::cout << "hawk despawned" << std::endl;
 				}
 				else {
 					tempHawks.push_back(h);
 					h->render(window);
 				}
-				
-
 			}
 
 			window->draw(pointUI);
@@ -367,18 +356,17 @@ int main()
 			
 		}
 	else {
+		//starting/pause menu
 		window->clear();
-		background.setPosition(camera.position);
-		window->draw(background);
+		tiledRenderer.updateCenterTile(window, centerTile, camera, Resources::textures["TiledClouds.png"].getSize().x, scale.x);
+		tiledRenderer.render(window, Resources::textures["TiledClouds.png"],Resources::textures["TiledClouds.png"].getSize().x, scale, centerTile);
 		window->setView(camera.GetView(window->getSize()));
 		menu.updatePosition(camera, window);
 		menu.draw(window);
 	}
 		window->display();
-
 	}
 
 	delete window;
 	return 0;
-
 }

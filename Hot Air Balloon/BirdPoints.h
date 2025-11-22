@@ -1,9 +1,10 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 
+// collectable birds spawn randomly around the player, despawning when too far away
+
 class BirdPoints
 {
-
 public:
 	float pointValue;
 	sf::Vector2f position; 
@@ -20,6 +21,5 @@ private:
 	sf::Clock movementClock;
 	float angle = (std::rand() %360);
 	float speed;
-	
-};
 
+};

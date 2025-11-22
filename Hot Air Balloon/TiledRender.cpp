@@ -1,6 +1,8 @@
 #include "TiledRender.h"
 
+//updates a 3x3 square of the background around the player as they move so that it appears infinite
 
+//checks where the player currently is and updates where the center tile needs to be based on that
 void TiledRender::updateCenterTile(sf::RenderWindow* window, sf::Vector2f& centerTile,
 	Camera& camera, float backgroundSize, float backgroundScale) {
 
@@ -21,9 +23,9 @@ void TiledRender::updateCenterTile(sf::RenderWindow* window, sf::Vector2f& cente
 	{
 		centerTile.y -= backgroundSize * backgroundScale;
 	}
-
 }
 
+//renders the tiles around the center tile
 void TiledRender::render(sf::RenderWindow* window, sf::Texture backgroundTexture,
 	float backgroundSize, sf::Vector2f scale, sf::Vector2f centerTile) {
 

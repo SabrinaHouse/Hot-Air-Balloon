@@ -19,6 +19,7 @@ void BirdPoints::render(sf::RenderWindow* window) {
 
 }
 
+//check if birds overlap player
 bool BirdPoints::checkPlayerCollision(sf::Sprite player) {
 	if (const std::optional intersection = player.getGlobalBounds().findIntersection(sprite->getGlobalBounds()))
 	{
@@ -27,12 +28,12 @@ bool BirdPoints::checkPlayerCollision(sf::Sprite player) {
 	return false;
 }
 
-
-
+//randomized angle for birds to switch to
 void BirdPoints::setAngle() {
 	angle = (std::rand() % 360);
 }
 
+//birds move and switch angle every 2-3 seconds
 void BirdPoints::move(float deltaTime) {
 	if (movementClock.getElapsedTime().asSeconds() > std::rand() % 2 + 2) {
 		setAngle();

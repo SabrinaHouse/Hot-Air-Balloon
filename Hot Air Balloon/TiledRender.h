@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "Camera.h"
 
+//ensures the background appears everywhere
 
 class TiledRender
 {
