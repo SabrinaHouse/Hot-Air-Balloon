@@ -2,6 +2,8 @@
 
 Simple Game made in Visual Studio 2022 using C++ and SFML
 
+**IMPORTANT NOTE: ** Run in x86!
+
 ## Gameplay:
 
 Play as a hot air balloon and fly around collecting brightly colored birds worth different point amounts. Hawks will spawn randomly on the edges of the screen and shoot out. If they collide with you, it's game over!
